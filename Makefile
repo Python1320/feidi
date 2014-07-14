@@ -6,5 +6,5 @@ clean:
 release:
 	make -C builds/linux-gmake release
 
-	
-	
+run:
+	cd bin; ./feidi
