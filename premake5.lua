@@ -9,7 +9,9 @@ solution"feidi"
 	flags { 
 		--"FatalWarnings", 
 		--"Unicode" 
+		"Symbols",
 	}
+	warnings "Extra"
 	location("builds/" .. os.get() .. "-" .. _ACTION)
 	
 	warnings "Extra"
@@ -30,12 +32,14 @@ solution"feidi"
 			"../luajit-2.0/src/",
 			"../libuv/include/",
 			"../SteamPP/",
+			"../cryptopp",
 			"luastate/include",
 		}
 		libdirs { 
 			"../luajit-2.0/src/",
 			"../libuv/out/Release/",
 			"../SteamPP/",
+			"../cryptopp",
 			}
 
 		links {
