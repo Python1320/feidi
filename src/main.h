@@ -37,6 +37,7 @@ std::string::size_type read_offset = 0;
 
 lua_State *L;
 
+const unsigned char* tolua_data;
 
 extern SteamClient client;
 

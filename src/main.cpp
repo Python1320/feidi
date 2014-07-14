@@ -102,40 +102,44 @@ int main() {
 		const char* 		game_name
 	)
 	{
+		std::string nullstr = "";
+		
 		std::string str_user = std::to_string(user.steamID64);
-		std::string str_source = std::to_string(source->steamID64);
+		std::string str_source = source?std::to_string(source->steamID64):nullstr;
 		
 		std::ostringstream ss;
-		ss << std::hex << std::setfill('0');
-		for (auto i = 0; i < 20; i++)
-			ss << std::setw(2) << static_cast<unsigned>(avatar_hash[i]);
-		std::string avatar_hex = ss.str();
+		if (avatar_hash) {
+			ss << std::hex << std::setfill('0');
+			for (auto i = 0; i < 20; i++)
+				ss << std::setw(2) << static_cast<unsigned>(avatar_hash[i]);
+		}
+		std::string avatar_hex = avatar_hash?ss.str():nullstr;
 		
 		state["onUserInfo"](
 			str_user.c_str(),
 			str_source.c_str(),
 			name?name:"",
-			static_cast<unsigned int>(*pstate),
+			pstate?static_cast<unsigned int>(*pstate):0,
 			avatar_hex.c_str(),
 			game_name?game_name:""
 		);
 	};
 
-	client.onTyping = [](SteamID user) {
+	client.onTyping = [](SteamID user,bool relaying) {
 		std::string str_user = std::to_string(user.steamID64);
-		state["onTyping"](str_user.c_str());
+		state["onTyping"](str_user.c_str(),relaying);
 	};
 	
-	client.onPrivateMsg = [](SteamID user, const char* message) {
+	client.onPrivateMsg = [](SteamID user, const char* message, bool relaying) {
 		std::string str_user = std::to_string(user.steamID64);
-		state["onPrivateMsg"](str_user.c_str(),message);
+		state["onPrivateMsg"]( str_user.c_str(),message, relaying );
 	};
 	
 	client.onSentry = [](const unsigned char sentryhash[20]) {
 		std::string str((const char *)(&sentryhash),20);
-		std::cout << "Sentry Hash ("<< str.length();
-		
-		std::cout << "): " << bin2hex(str) << std::endl;
+		//std::cout << "Sentry Hash ("<< str.length();
+		//
+		//std::cout << "): " << bin2hex(str) << std::endl;
 
 		state["onSentry"](&str);
 	};
@@ -144,6 +148,14 @@ int main() {
 		std::string str_room 	= std::to_string(room.steamID64);
 		std::string str_chatter = std::to_string(chatter.steamID64);
 		state["onChatMsg"](str_room.c_str(),str_chatter.c_str(),message.c_str());
+	};
+	
+	client.onUnhandledMessage = [](EMsg emsg, const unsigned char* data, std::size_t length) {
+		//std::string datastr(reinterpret_cast<const char*>(data),length);
+		//std::cout << "Unhandled message (" << (int)emsg << ", " << length;
+		//std::cout << "): " << bin2hex(datastr) << std::endl;
+		tolua_data = data;
+		state["onUnhandledMessage"]((int)emsg,length);
 	};
 	
 	int ret = uv_run(uv_default_loop(), uv_run_mode::UV_RUN_DEFAULT);
@@ -157,6 +169,11 @@ extern "C" {
 	LUA_EXPORT void steam_SetPersonaState(EPersonaState state)
 	{
 		client.SetPersonaState(state);
+	}
+	
+	LUA_EXPORT void steam_GetUnhandledData(unsigned char * dest,int len)
+	{
+		memcpy((void *)dest,(const void *)tolua_data,len);
 	}
 	
 	LUA_EXPORT void steam_JoinChat(const char * pchSteamID)
