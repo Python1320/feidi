@@ -116,6 +116,16 @@ local mt={
 }
 setmetatable(EResult,mt)
 
+local EMsg={}
+_G.EMsg=EMsg
+for line in io.lines"SteamKit/Resources/SteamLanguage/emsg.steamd" do
+	local name,value = line:match[[([^%s]+) = (%d+)]]
+	value=value and tonumber(value)
+	if value then
+		EMsg[value]=name
+	end
+end
+
 local extra=[[  
 	typedef enum {
 		Offline = 0,

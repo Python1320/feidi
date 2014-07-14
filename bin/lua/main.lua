@@ -14,12 +14,12 @@ function onChatEnter(room,response,name,count,members)
 	print("onChatEnter",room,response,name,count,members)
 end
 
-function onTyping(user)
-	print("user",user)
+function onTyping(user,relaying)
+	print("TYPING",user.relaying and "RELAY" or "")
 end
 
-function onPrivateMsg(user,message)
-	print("onPrivateMsg",user,message)
+function onPrivateMsg(user,message,relaying)
+	print("onPrivateMsg",user,message,relaying and "RELAY" or "")
 end
 function onChatMsg(room,chatter,message)
 	print("onChatMsg",room,chatter,message)
@@ -31,24 +31,36 @@ end
 function onLogOn(result,mysid)
 	print("onLogOn",result,mysid) 
 	if (result==tonumber(ffi.C.EResult_OK)) then
-		C.steam_SetPersonaState(ffi.C.LookingToPlay)
+		C.steam_SetPersonaState(ffi.C.Online)
 		C.steam_JoinChat("103582791432344912")
 	else
 		error("Logon Failed: "..tostring(EResult[result]))
 	end
 end
+
+local states={
+	[0]="Offline",
+	"Online",
+	"Busy",
+	"Away",
+	"Snooze",
+	"LookingToTrade",
+	"LookingToPlay",
+	"Max",
+}
+
 function onUserInfo(user,
 	                source,
 	                name,
 	                state,
 	                avatar_hash,
 	                game_name)
-	print(	"onUserInfo",
+	print(	"INFO",
 			user,
 			source,
 			name,
-			state,
-			avatar_hash,
+			states[state] or state,
+			--avatar_hash,
 			game_name)
 end
 	
@@ -77,4 +89,20 @@ end
 function onHandshake(...) 
 	print("onHandshake",...) 
 	C.steam_LogOn(CFG.username,CFG.password,SENTRY_HASH,CFG.key)
+end
+
+function onUnhandledMessage(emsg,length)
+	print("Got EMsg "..(EMsg[emsg] or emsg).." (len="..length.."): ")
+	local dat
+	if length>0 then
+		local buf = ffi.new("uint8_t[?]", length)
+		C.steam_GetUnhandledData(buf,length)
+		dat = ffi.string(buf, length)
+	end
+	if dat then
+		print("\t"..HexDumpString(dat, ""))
+		print("\t"..dat:gsub("%s","_"):gsub("[^%w%d%_]","."))
+	else
+		print"empty!?!?!?!?"
+	end
 end
